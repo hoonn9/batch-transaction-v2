@@ -1,22 +1,20 @@
-import {
-  MergeTxOutboundInputDto,
-  MergeTxOutboundOutputDto,
-  MergeTxOutboundPort,
-} from '../outbound-port/merge-tx.outbound-port';
 import { MergeTransactionEntity } from '../entity/merge-transaction.entity';
+import { DatabaseService } from '../../database/database.interface';
+import { Inject, Injectable } from '@nestjs/common';
 
-export class MergeTxRepository implements MergeTxOutboundPort {
-  execute(params: MergeTxOutboundInputDto): MergeTxOutboundOutputDto {
-    const entity = new MergeTransactionEntity();
+export const MERGE_TRANSACTION_DATABASE_SERVICE =
+  'MERGE_TRANSACTION_DATABASE_SERVICE' as const;
 
-    entity.transactionId = params.tx.transactionId;
-    entity.productId = params.storeTx.productId;
-    entity.storeId = params.storeTx.storeId;
-    entity.amount = params.tx.amount;
-    entity.balance = params.tx.balance;
-    entity.cancelYn = params.tx.cancelYn;
-    entity.date = params.tx.date;
+@Injectable()
+export class MergeTxRepository {
+  constructor(
+    @Inject(MERGE_TRANSACTION_DATABASE_SERVICE)
+    private readonly databaseService: DatabaseService<MergeTransactionEntity>,
+  ) {}
 
-    return entity;
+  async save(
+    entities: MergeTransactionEntity | MergeTransactionEntity[],
+  ): Promise<void> {
+    await this.databaseService.save(entities);
   }
 }

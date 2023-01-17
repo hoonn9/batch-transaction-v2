@@ -8,7 +8,7 @@ import {
 import { v4 } from 'uuid';
 import { faker } from '@faker-js/faker';
 import { yyyyMMdd } from '../../../src/lib/date';
-import { MergeTxRepository } from '../../../src/transaction/outbound-adapter/merge-tx.repository';
+import { MergeTxAdapter } from '../../../src/transaction/outbound-adapter/merge-tx.adapter';
 import { BadRequestException } from '@nestjs/common';
 
 describe('MergeTxService', () => {
@@ -20,7 +20,7 @@ describe('MergeTxService', () => {
         MergeTxService,
         {
           provide: MERGE_TX_OUTBOUND_PORT,
-          useClass: MergeTxRepository,
+          useClass: MergeTxAdapter,
         },
       ],
     }).compile();
