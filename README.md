@@ -13,6 +13,9 @@
   - [ ] 이미 처리한 Transaction의 경우 스킵한다.
   - [ ] 수집 완료된 경우 DB에 저장한다.
   - [ ] 중복 체크를 효율적으로 하기 위해서 key:value 형식으로도 저장한다.
+- [ ] Store Transaction 을 Transaction과 매칭시켜 조회한다.
+  - [ ] Store Transaction을 캐시하여 저장한다.
+- [ ] Transaction과 Store Transaction을 Merge하여 Merge Transaction을 생성한다.
 - [ ] 파일 데이터베이스에 저장할 수 있다.
 - [ ] 수집하는 동안의 배치 히스토리를 저장한다.
   - [ ] 수집 타입

@@ -18,5 +18,6 @@
     "noFallthroughCasesInSwitch": false,
     "allowUnreachableCode": false,
     "strict": true
-  }
+  },
+  "exclude": ["dist"]
 }
