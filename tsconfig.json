@@ -17,6 +17,7 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "allowUnreachableCode": false,
+    "strictPropertyInitialization": false,
     "strict": true
   },
   "exclude": ["dist"]

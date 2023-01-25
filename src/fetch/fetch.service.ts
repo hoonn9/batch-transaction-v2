@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { AxiosRequestConfig } from 'axios';
+import { AxiosRequestConfig, isAxiosError } from 'axios';
 import { Injectable } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 
@@ -15,7 +15,7 @@ export class FetchService {
       },
       (req) => {
         this.requestFailed.push(req);
-        return req;
+        return Promise.reject(req);
       },
     );
 
@@ -25,12 +25,19 @@ export class FetchService {
       },
       (res) => {
         this.responseFailed.push(res);
-        return res;
+        return Promise.reject(res);
       },
     );
   }
 
-  get<T>(url: string, config?: AxiosRequestConfig<T>) {
-    return firstValueFrom(this.httpService.get<T>(url, config));
+  get<T>(url: string, config?: AxiosRequestConfig<T>, retry = 0) {
+    try {
+      return firstValueFrom(this.httpService.get<T>(url, config));
+    } catch (e) {
+      if (isAxiosError(e) && retry > 0) {
+        return this.get(url, config, retry--);
+      }
+      throw e;
+    }
   }
 }

@@ -8,6 +8,7 @@ export type ApiCollectOutboundPortOutputDto = {
     storeId: string;
     transactionId: string;
   }[];
+  failedPages: number[];
 };
 
 export interface ApiCollectOutboundPort {

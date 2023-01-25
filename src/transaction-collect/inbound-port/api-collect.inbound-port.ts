@@ -1,5 +1,7 @@
+import { TransactionEntity } from '../../transaction/entity/transaction.entity';
+
 export type ApiCollectInboundPortInputDto = void;
-export type ApiCollectInboundPortOutputDto = void;
+export type ApiCollectInboundPortOutputDto = TransactionEntity[];
 
 export interface ApiCollectInboundPort {
   execute(

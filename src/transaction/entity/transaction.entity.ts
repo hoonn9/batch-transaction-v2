@@ -4,5 +4,5 @@ export class TransactionEntity {
   amount!: number;
   balance!: number;
   cancelYn!: 'Y' | 'N';
-  date!: string; // yyyy-MM-dd
+  date!: Date;
 }
