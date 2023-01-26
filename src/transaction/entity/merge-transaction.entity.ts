@@ -5,5 +5,5 @@ export class MergeTransactionEntity {
   amount!: number;
   balance!: number;
   cancelYn!: 'Y' | 'N';
-  date!: string; // yyyy-MM-dd
+  date!: Date; // yyyy-MM-dd
 }

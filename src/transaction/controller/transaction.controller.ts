@@ -6,7 +6,6 @@ import {
 import { MergeTransactionEntity } from '../entity/merge-transaction.entity';
 import { v4 } from 'uuid';
 import { faker } from '@faker-js/faker';
-import { yyyyMMdd } from '../../lib/date';
 
 @Controller()
 export class TransactionController {
@@ -22,7 +21,7 @@ export class TransactionController {
     merge.storeId = v4();
     merge.amount = +faker.commerce.price();
     merge.balance = +faker.commerce.price();
-    merge.date = yyyyMMdd(faker.date.recent(5));
+    merge.date = faker.date.recent(5);
     merge.cancelYn = faker.helpers.arrayElement(['Y', 'N']);
 
     await this.saveMergeTxInboundPort.execute({

@@ -44,5 +44,6 @@ const saveMergeTxController = [TransactionController];
   ],
   controllers: [...saveMergeTxController],
   providers: [...mergeTxPorts, ...saveMergeTxPorts],
+  exports: [MergeTxRepository, SAVE_MERGE_TX_INBOUND_PORT],
 })
 export class TransactionModule {}

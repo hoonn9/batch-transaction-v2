@@ -1,28 +1,13 @@
+import { TransactionEntity } from '../entity/transaction.entity';
+import { StoreTransactionEntity } from '../entity/store-transaction.entity';
+import { MergeTransactionEntity } from '../entity/merge-transaction.entity';
+
 export type MergeTxInboundInputDto = {
-  tx: {
-    transactionId: string;
-    storeId: string;
-    amount: number;
-    balance: number;
-    cancelYn: 'Y' | 'N';
-    date: string;
-  };
-  storeTx: {
-    storeId: string;
-    transactionId: string;
-    productId: string;
-  };
+  tx: TransactionEntity;
+  storeTx: StoreTransactionEntity;
 };
 
-export type MergeTxInboundOutputDto = {
-  transactionId: string;
-  productId: string;
-  storeId: string;
-  amount: number;
-  balance: number;
-  cancelYn: 'Y' | 'N';
-  date: string;
-};
+export type MergeTxInboundOutputDto = MergeTransactionEntity;
 
 export interface MergeTxInboundPort {
   execute(params: MergeTxInboundInputDto): MergeTxInboundOutputDto;
