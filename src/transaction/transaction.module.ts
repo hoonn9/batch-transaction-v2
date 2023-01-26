@@ -11,6 +11,8 @@ import {
   MERGE_TRANSACTION_DATABASE_SERVICE,
   MergeTxRepository,
 } from './outbound-adapter/merge-tx.repository';
+import { FIND_MERGE_TX_INBOUND_PORT } from './inbound-port/find-merge-tx.inbound-port';
+import { FindMergeTxService } from './service/find-merge-tx.service';
 
 const mergeTxPorts: Provider[] = [
   {
@@ -20,6 +22,10 @@ const mergeTxPorts: Provider[] = [
   {
     provide: MERGE_TX_OUTBOUND_PORT,
     useClass: MergeTxAdapter,
+  },
+  {
+    provide: FIND_MERGE_TX_INBOUND_PORT,
+    useClass: FindMergeTxService,
   },
 ];
 
@@ -44,6 +50,10 @@ const saveMergeTxController = [TransactionController];
   ],
   controllers: [...saveMergeTxController],
   providers: [...mergeTxPorts, ...saveMergeTxPorts],
-  exports: [MergeTxRepository, SAVE_MERGE_TX_INBOUND_PORT],
+  exports: [
+    MergeTxRepository,
+    SAVE_MERGE_TX_INBOUND_PORT,
+    FIND_MERGE_TX_INBOUND_PORT,
+  ],
 })
 export class TransactionModule {}

@@ -21,6 +21,10 @@ import {
   SAVE_MERGE_TX_INBOUND_PORT,
   SaveMergeTxInboundPort,
 } from '../transaction/inbound-port/save-merge-tx.inbound-port';
+import {
+  FIND_MERGE_TX_INBOUND_PORT,
+  FindMergeTxInboundPort,
+} from '../transaction/inbound-port/find-merge-tx.inbound-port';
 
 @Injectable()
 export class MergeTxBatchFacade {
@@ -34,6 +38,9 @@ export class MergeTxBatchFacade {
     @Inject(SAVE_MERGE_TX_INBOUND_PORT)
     private readonly saveMergeTxInboundPort: SaveMergeTxInboundPort,
 
+    @Inject(FIND_MERGE_TX_INBOUND_PORT)
+    private readonly findMergeTxInboundPort: FindMergeTxInboundPort,
+
     @Inject(COLLECT_STORE_TX_INBOUND_PORT)
     private readonly collectStoreTxInboundPort: CollectStoreTxInboundPort,
   ) {}
@@ -43,11 +50,13 @@ export class MergeTxBatchFacade {
     const txs = await this.apiCollectInboundPort.execute();
 
     for (const chunk of this.makeChunk(txs, chunkSize)) {
+      const newTxChunk = await this.filterNewTxs(chunk);
+
       const storeTxs = await this.collectStoreTxInboundPort.execute(
-        this.getStoreTransactionDates(chunk),
+        this.getStoreTransactionDates(newTxChunk),
       );
 
-      const result = this.merge(chunk, storeTxs);
+      const result = this.merge(newTxChunk, storeTxs);
 
       console.log('merged length: ', result.merged.length);
       console.log('failed length: ', result.failed.length);
@@ -56,6 +65,23 @@ export class MergeTxBatchFacade {
       });
       await this.delay(1000);
     }
+  }
+
+  async filterNewTxs(txs: TransactionEntity[]) {
+    const result: TransactionEntity[] = [];
+
+    await Promise.all(
+      txs.map(async (tx) => {
+        const mergeTx = await this.findMergeTxInboundPort.execute({
+          transactionId: tx.transactionId,
+        });
+        if (!mergeTx) {
+          result.push(tx);
+        }
+      }),
+    );
+
+    return result;
   }
 
   makeChunk(txs: TransactionEntity[], chunkSize: number) {
