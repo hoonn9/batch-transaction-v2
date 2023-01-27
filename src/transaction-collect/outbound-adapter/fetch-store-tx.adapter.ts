@@ -11,7 +11,7 @@ import {
 } from './dto/fetch-store-tx.dto';
 import { validateOrReject } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
-import { isFulfilledResult, isRejectedResult } from '../../lib/promise';
+import { isFulfilledResult } from '../../lib/promise';
 import { isAxiosError } from 'axios';
 
 class StoreTxFetchError extends Error {
@@ -32,7 +32,6 @@ export class FetchStoreTxAdapter implements FetchStoreTxOutboundPort {
 
   private async fetchAllPage(storeId: string, date: string) {
     const pageInfo = await this.fetchPageInfo(storeId, date);
-
     if (pageInfo === null) {
       return [];
     }

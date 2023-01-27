@@ -1,15 +1,13 @@
-export type ApiCollectOutboundPortInputDto = void;
-export type ApiCollectOutboundPortOutputDto = {
-  transactions: {
-    amount: number;
-    balance: number;
-    cancelYn: 'Y' | 'N';
-    date: string; // yyyy-MM-dd
-    storeId: string;
-    transactionId: string;
-  }[];
-  failedPages: number[];
+import { CollectTransactionDto } from './dto/collect-transaction.dto';
+
+export type ApiCollectOutboundPortInputDto = {
+  size: number;
+  page: number;
 };
+export type ApiCollectOutboundPortOutputDto = {
+  transactions: CollectTransactionDto[];
+  failedPages: number[];
+} | null;
 
 export interface ApiCollectOutboundPort {
   execute(

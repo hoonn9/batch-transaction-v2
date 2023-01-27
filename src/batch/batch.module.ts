@@ -1,13 +1,11 @@
 import { Module } from '@nestjs/common';
-import { MergeTxBatchFacade } from './merge-tx-batch.facade';
 import { BatchController } from './batch.controller';
-import { TransactionModule } from '../transaction/transaction.module';
-import { TransactionCollectModule } from '../transaction-collect/transaction-collect.module';
-import { MergeTxBatchCacheService } from './merge-tx-batch-cache.service';
+import { ApiMergeModule } from './merge-tx/api-merge/api-merge.module';
+import { CsvMergeModule } from './merge-tx/csv-merge/csv-merge.module';
+import { BatchMergeTxCacheModule } from './merge-tx/cache/batch-merge-tx-cache.module';
 
 @Module({
-  imports: [TransactionModule, TransactionCollectModule],
+  imports: [BatchMergeTxCacheModule, ApiMergeModule, CsvMergeModule],
   controllers: [BatchController],
-  providers: [MergeTxBatchFacade, MergeTxBatchCacheService],
 })
 export class BatchModule {}

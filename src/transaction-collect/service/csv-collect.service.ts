@@ -5,19 +5,19 @@ import {
   TransactionCollectInboundPortOutputDto,
 } from '../inbound-port/transaction-collect.inbound-port';
 import {
-  API_COLLECT_OUTBOUND_PORT,
-  ApiCollectOutboundPort,
-} from '../outbound-port/api-collect.outbound-port';
+  CSV_COLLECT_OUTBOUND_PORT,
+  CsvCollectOutboundPort,
+} from '../outbound-port/csv-collect.outbound-port';
 import { TransactionCollectService } from './transaction-collect.service';
 
 @Injectable()
-export class ApiCollectService
+export class CsvCollectService
   extends TransactionCollectService
   implements TransactionCollectInboundPort
 {
   constructor(
-    @Inject(API_COLLECT_OUTBOUND_PORT)
-    private readonly apiCollectOutboundPort: ApiCollectOutboundPort,
+    @Inject(CSV_COLLECT_OUTBOUND_PORT)
+    private readonly csvCollectOutboundPort: CsvCollectOutboundPort,
   ) {
     super();
   }
@@ -25,9 +25,9 @@ export class ApiCollectService
   async execute(
     params: TransactionCollectInboundPortInputDto,
   ): Promise<TransactionCollectInboundPortOutputDto> {
-    const result = await this.apiCollectOutboundPort.execute(params);
+    const result = await this.csvCollectOutboundPort.execute(params);
     if (result) {
-      return result.transactions.map(this.toEntity);
+      return result.map(this.toEntity);
     }
     return result;
   }

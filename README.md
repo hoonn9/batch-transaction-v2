@@ -8,15 +8,15 @@
 - [ ] Transaction을 수집할 수 있다.
   - [ ] API를 요청하여 Transaction을 수집할 수 있다.
     - [ ] 실패할 경우 재시도 데이터에 저장한다.
-  - [ ] CSV 파일에 접근하여 Transaction을 수집할 수 있다.
-    - [ ] API보다 CSV 파일을 먼저 처리하여 HTTP 요청을 줄인다.
-  - [ ] 이미 처리한 Transaction의 경우 스킵한다.
-  - [ ] 수집 완료된 경우 DB에 저장한다.
-  - [ ] 중복 체크를 효율적으로 하기 위해서 key:value 형식으로도 저장한다.
-- [ ] Store Transaction 을 Transaction과 매칭시켜 조회한다.
-  - [ ] Store Transaction을 캐시하여 저장한다.
-- [ ] Transaction과 Store Transaction을 Merge하여 Merge Transaction을 생성한다.
-- [ ] 파일 데이터베이스에 저장할 수 있다.
+  - [x] CSV 파일에 접근하여 Transaction을 수집할 수 있다.
+  - [x] 각 Transaction 수집을 동시에 병렬적으로 실행한다.
+  - [x] 이미 처리한 Transaction의 경우 스킵한다.
+  - [x] 수집 완료된 경우 DB에 저장한다.
+  - [x] 중복 체크를 효율적으로 하기 위해서 key:value 형식으로도 저장한다.
+- [x] Store Transaction 을 Transaction과 매칭시켜 조회한다.
+  - [x] Store Transaction을 캐시하여 저장한다.
+- [x] Transaction과 Store Transaction을 Merge하여 Merge Transaction을 생성한다.
+- [x] 파일 데이터베이스에 저장할 수 있다.
 - [ ] 수집하는 동안의 배치 히스토리를 저장한다.
   - [ ] 수집 타입
     - [ ] CSV, API ...
@@ -31,8 +31,8 @@
 - [ ] Merge Transaction을 조회할 수 있다.
   - [ ] 페이지네이션이 가능하다.
   - [ ] 기간에 따른 조회가 가능하다.
-- [ ] 수집 기능의 처리량 조절이 가능하다.
-  - [ ] 수집 중간에 딜레이를 줄 수 있다.
+- [x] 수집 기능의 처리량 조절이 가능하다.
+  - [x] 수집 중간에 딜레이를 줄 수 있다.
 - [ ] 실패한 요청을 재시도할 수 있다.
 
     

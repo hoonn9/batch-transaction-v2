@@ -1,7 +1,7 @@
 import {
   IsNumber,
   IsNumberString,
-  IsUUID,
+  IsString,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -10,7 +10,7 @@ export class FetchStoreTxDto {
   @IsNumberString()
   storeId: string;
 
-  @IsUUID()
+  @IsString()
   transactionId: string;
 
   @IsNumberString()
