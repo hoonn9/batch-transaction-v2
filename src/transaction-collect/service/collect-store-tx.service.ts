@@ -10,6 +10,9 @@ import {
   CollectStoreTxInboundPortOutputDto,
 } from '../inbound-port/collect-store-tx.inbound-port';
 import { StoreTransactionEntity } from '../../transaction/entity/store-transaction.entity';
+import { TransactionEntity } from '../../transaction/entity/transaction.entity';
+import { yyyyMMdd } from '../../lib/date';
+import { StoreTransactionDates } from './collect-store-tx.type';
 
 @Injectable()
 export class CollectStoreTxService implements CollectStoreTxInboundPort {
@@ -22,18 +25,30 @@ export class CollectStoreTxService implements CollectStoreTxInboundPort {
     params: CollectStoreTxInboundPortInputDto,
   ): Promise<CollectStoreTxInboundPortOutputDto> {
     const result: CollectStoreTxInboundPortOutputDto = {};
-
-    const promises = Object.entries(params).map(
-      async ([storeId, { dates }]) => {
-        return Promise.allSettled(
-          dates.map(async (date) => {
-            await this.updateByDate(result, storeId, date);
-          }),
-        );
-      },
-    );
+    const promises = Object.entries(
+      this.getStoreTransactionDates(params.txs),
+    ).map(async ([storeId, { dates }]) => {
+      return Promise.allSettled(
+        dates.map(async (date) => {
+          await this.updateByDate(result, storeId, date);
+        }),
+      );
+    });
 
     await Promise.allSettled(promises);
+
+    return result;
+  }
+
+  private getStoreTransactionDates(
+    txs: TransactionEntity[],
+  ): StoreTransactionDates {
+    const result: StoreTransactionDates = {};
+
+    txs.forEach((tx) => {
+      result[tx.storeId] ??= { dates: [] };
+      result[tx.storeId].dates.push(yyyyMMdd(tx.date));
+    });
 
     return result;
   }

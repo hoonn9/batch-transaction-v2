@@ -3,10 +3,8 @@ import { TransactionEntity } from '../transaction/entity/transaction.entity';
 import {
   COLLECT_STORE_TX_INBOUND_PORT,
   CollectStoreTxInboundPort,
-  CollectStoreTxInboundPortInputDto,
   CollectStoreTxInboundPortOutputDto,
 } from '../transaction-collect/inbound-port/collect-store-tx.inbound-port';
-import { yyyyMMdd } from '../lib/date';
 import {
   MERGE_TX_INBOUND_PORT,
   MergeTxInboundPort,
@@ -25,6 +23,9 @@ import {
   FIND_MERGE_TX_INBOUND_PORT,
   FindMergeTxInboundPort,
 } from '../transaction/inbound-port/find-merge-tx.inbound-port';
+import { MergeTxBatchCacheService } from './merge-tx-batch-cache.service';
+import { FindStoreTxByTx, MergeTransactionTarget } from './merge-tx-batch.type';
+import { delay, makeChunk } from '../lib/util';
 
 @Injectable()
 export class MergeTxBatchFacade {
@@ -43,28 +44,102 @@ export class MergeTxBatchFacade {
 
     @Inject(COLLECT_STORE_TX_INBOUND_PORT)
     private readonly collectStoreTxInboundPort: CollectStoreTxInboundPort,
+
+    private readonly mergeTxBatchCacheService: MergeTxBatchCacheService,
   ) {}
 
   async execute() {
-    const chunkSize = 30;
+    const chunkSize = 300;
     const txs = await this.apiCollectInboundPort.execute();
 
-    for (const chunk of this.makeChunk(txs, chunkSize)) {
-      const newTxChunk = await this.filterNewTxs(chunk);
+    for (const chunk of makeChunk(txs, chunkSize)) {
+      const mergeTxs = await this.mergeChunk(chunk);
 
-      const storeTxs = await this.collectStoreTxInboundPort.execute(
-        this.getStoreTransactionDates(newTxChunk),
-      );
+      console.log('merged: ', mergeTxs.length);
 
-      const result = this.merge(newTxChunk, storeTxs);
-
-      console.log('merged length: ', result.merged.length);
-      console.log('failed length: ', result.failed.length);
       await this.saveMergeTxInboundPort.execute({
-        mergeTxs: result.merged,
+        mergeTxs,
       });
-      await this.delay(1000);
+      await delay(1000);
     }
+  }
+
+  private async mergeChunk(
+    txs: TransactionEntity[],
+  ): Promise<MergeTransactionEntity[]> {
+    const cacheMergeResult = await this.mergeFromCache(txs);
+    const apiMergeResult = await this.mergeFromApi(cacheMergeResult.notMatched);
+
+    return [...cacheMergeResult.result, ...apiMergeResult];
+  }
+
+  private async mergeFromApi(txs: TransactionEntity[]) {
+    const result: MergeTransactionEntity[] = [];
+
+    const storeTxMap = await this.getStoreTxMapByTxs(txs);
+    const matchResult = this.matchStoreTx(txs, (tx) =>
+      this.findStoreTx(tx, storeTxMap),
+    );
+
+    result.push(...this.merge(matchResult.target));
+
+    return result;
+  }
+
+  private async mergeFromCache(txs: TransactionEntity[]) {
+    const result: MergeTransactionEntity[] = [];
+
+    const newTxs = await this.filterNewTxs(txs);
+    const cacheMatchResult = this.matchStoreTx(newTxs, (tx) =>
+      this.mergeTxBatchCacheService.findStoreTx(tx),
+    );
+
+    result.push(...this.merge(cacheMatchResult.target));
+    return { result, notMatched: cacheMatchResult.notMatched };
+  }
+
+  private async getStoreTxMapByTxs(txs: TransactionEntity[]) {
+    const result = await this.collectStoreTxInboundPort.execute({
+      txs,
+    });
+
+    this.mergeTxBatchCacheService.saveStoreTxsCache(result);
+
+    return result;
+  }
+
+  private matchStoreTx(
+    txs: TransactionEntity[],
+    findStoreTxByTx: FindStoreTxByTx,
+  ) {
+    const target: MergeTransactionTarget[] = [];
+    const notMatched: TransactionEntity[] = [];
+
+    txs.forEach((tx) => {
+      const storeTx = findStoreTxByTx(tx);
+
+      if (storeTx) {
+        return target.push({
+          tx,
+          storeTx,
+        });
+      }
+      notMatched.push(tx);
+    });
+
+    return {
+      target,
+      notMatched,
+    };
+  }
+
+  private merge(targets: MergeTransactionTarget[]) {
+    return targets.map((target) =>
+      this.mergeTxInboundPort.execute({
+        tx: target.tx,
+        storeTx: target.storeTx,
+      }),
+    );
   }
 
   async filterNewTxs(txs: TransactionEntity[]) {
@@ -84,65 +159,10 @@ export class MergeTxBatchFacade {
     return result;
   }
 
-  makeChunk(txs: TransactionEntity[], chunkSize: number) {
-    const result: TransactionEntity[][] = [];
-
-    for (let i = 0; i < txs.length; i += chunkSize) {
-      result.push(txs.slice(i, i + chunkSize));
-    }
-
-    return result;
-  }
-
-  delay(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  private merge(
-    txs: TransactionEntity[],
-    storeTxs: CollectStoreTxInboundPortOutputDto,
-  ) {
-    const merged: MergeTransactionEntity[] = [];
-    const failed: TransactionEntity[] = [];
-
-    txs.forEach((tx) => {
-      const foundStoreTx = this.findStoreTx(tx, storeTxs);
-
-      if (foundStoreTx) {
-        const mergeTx = this.mergeTxInboundPort.execute({
-          tx,
-          storeTx: foundStoreTx,
-        });
-
-        merged.push(mergeTx);
-      } else {
-        failed.push(tx);
-      }
-    });
-
-    return {
-      merged,
-      failed,
-    };
-  }
-
   private findStoreTx(
     tx: TransactionEntity,
     storeTxs: CollectStoreTxInboundPortOutputDto,
   ): StoreTransactionEntity | null {
     return storeTxs[tx.storeId]?.[tx.transactionId] || null;
-  }
-
-  private getStoreTransactionDates(
-    txs: TransactionEntity[],
-  ): CollectStoreTxInboundPortInputDto {
-    const result: CollectStoreTxInboundPortInputDto = {};
-
-    txs.forEach((tx) => {
-      result[tx.storeId] ??= { dates: [] };
-      result[tx.storeId].dates.push(yyyyMMdd(tx.date));
-    });
-
-    return result;
   }
 }

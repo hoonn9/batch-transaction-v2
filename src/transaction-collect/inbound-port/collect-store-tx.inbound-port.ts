@@ -1,9 +1,8 @@
 import { StoreTransactionEntity } from '../../transaction/entity/store-transaction.entity';
+import { TransactionEntity } from '../../transaction/entity/transaction.entity';
 
 export type CollectStoreTxInboundPortInputDto = {
-  [storeId: string]: {
-    dates: string[];
-  };
+  txs: TransactionEntity[];
 };
 export type CollectStoreTxInboundPortOutputDto = {
   [storeId: string]: {
