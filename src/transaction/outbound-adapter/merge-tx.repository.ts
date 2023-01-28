@@ -1,7 +1,11 @@
 import { MergeTransactionEntity } from '../entity/merge-transaction.entity';
 import { Inject, Injectable } from '@nestjs/common';
 import { NodeJsonDbService } from '../../database/node-json-db/node-json-db.service';
-import { MergeTransactionRaw } from './type/merge-tx-repository.type';
+import {
+  MergeTransactionRaw,
+  MergeTxFindOptions,
+  MergeTxPaginationInput,
+} from './type/merge-tx-repository.type';
 
 export const MERGE_TRANSACTION_DATABASE_SERVICE =
   'MERGE_TRANSACTION_DATABASE_SERVICE' as const;
@@ -37,6 +41,68 @@ export class MergeTxRepository {
       return;
     }
     return this.toEntity(raw);
+  }
+
+  async findMany(
+    pagination: MergeTxPaginationInput,
+    options: MergeTxFindOptions,
+  ) {
+    const result = {
+      entities: [] as MergeTransactionEntity[],
+      pageInfo: {
+        totalPage: 0,
+      },
+    };
+
+    const rawsObject = await this.databaseService.get<
+      Record<string, MergeTransactionRaw>
+    >('');
+
+    if (rawsObject) {
+      const allRaws = Object.values(rawsObject);
+      const appliedOptionRaws = this.applyFindOption(allRaws, options);
+      result.entities = this.applyPagination(appliedOptionRaws, pagination).map(
+        this.toEntity,
+      );
+
+      result.pageInfo.totalPage = Math.ceil(
+        appliedOptionRaws.length / pagination.size,
+      );
+    }
+    return result;
+  }
+
+  private applyFindOption(
+    raws: MergeTransactionRaw[],
+    options: MergeTxFindOptions,
+  ) {
+    return raws.filter((raw) => {
+      if (
+        options.dateRange.startDate &&
+        new Date(options.dateRange.startDate) > new Date(raw.date)
+      ) {
+        return false;
+      }
+
+      if (
+        options.dateRange.endDate &&
+        new Date(options.dateRange.endDate) < new Date(raw.date)
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  }
+
+  private applyPagination(
+    raws: MergeTransactionRaw[],
+    pagination: MergeTxPaginationInput,
+  ) {
+    return raws.slice(
+      (pagination.page - 1) * pagination.size,
+      pagination.page * pagination.size,
+    );
   }
 
   private toRaw(entity: MergeTransactionEntity): MergeTransactionRaw {

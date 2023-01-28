@@ -13,6 +13,10 @@ import {
 } from './outbound-adapter/merge-tx.repository';
 import { FIND_MERGE_TX_INBOUND_PORT } from './inbound-port/find-merge-tx.inbound-port';
 import { FindMergeTxService } from './service/find-merge-tx.service';
+import { PAGINATION_MERGE_TX_INBOUND_PORT } from './inbound-port/pagination-merge-tx.inbound-port';
+import { PaginationMergeTxService } from './service/pagination-merge-tx.service';
+import { PAGINATION_MERGE_TX_OUTBOUND_PORT } from './outbound-port/pagination-merge-tx.outbound-port';
+import { PaginationMergeTxAdapter } from './outbound-adapter/pagination-merge-tx.adapter';
 
 const mergeTxPorts: Provider[] = [
   {
@@ -23,9 +27,23 @@ const mergeTxPorts: Provider[] = [
     provide: MERGE_TX_OUTBOUND_PORT,
     useClass: MergeTxAdapter,
   },
+];
+
+const findMergeTxPorts: Provider[] = [
   {
     provide: FIND_MERGE_TX_INBOUND_PORT,
     useClass: FindMergeTxService,
+  },
+];
+
+const paginationMergeTxsPorts: Provider[] = [
+  {
+    provide: PAGINATION_MERGE_TX_INBOUND_PORT,
+    useClass: PaginationMergeTxService,
+  },
+  {
+    provide: PAGINATION_MERGE_TX_OUTBOUND_PORT,
+    useClass: PaginationMergeTxAdapter,
   },
 ];
 
@@ -37,8 +55,6 @@ const saveMergeTxPorts: Provider[] = [
   MergeTxRepository,
 ];
 
-const saveMergeTxController = [TransactionController];
-
 @Module({
   imports: [
     NodeJsonDbModule.register([
@@ -48,8 +64,13 @@ const saveMergeTxController = [TransactionController];
       },
     ]),
   ],
-  controllers: [...saveMergeTxController],
-  providers: [...mergeTxPorts, ...saveMergeTxPorts],
+  controllers: [TransactionController],
+  providers: [
+    ...mergeTxPorts,
+    ...findMergeTxPorts,
+    ...saveMergeTxPorts,
+    ...paginationMergeTxsPorts,
+  ],
   exports: [
     MergeTxRepository,
     SAVE_MERGE_TX_INBOUND_PORT,
