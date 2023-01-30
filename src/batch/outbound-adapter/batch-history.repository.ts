@@ -1,7 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NodeJsonDbService } from '../../database/node-json-db/node-json-db.service';
 import { BatchHistoryEntity } from '../entity/batch-history.entity';
-import { BatchHistoryRaw } from './type/batch-history-repository.type';
+import {
+  BatchHistoryFindOptions,
+  BatchHistoryPaginationInput,
+  BatchHistoryRaw,
+} from './type/batch-history-repository.type';
 import { CommonRepository } from '../../common/common-repository';
 
 export const BATCH_HISTORY_DATABASE_SERVICE =
@@ -14,6 +18,40 @@ export class BatchHistoryRepository extends CommonRepository<BatchHistoryEntity>
     private readonly databaseService: NodeJsonDbService<BatchHistoryRaw>,
   ) {
     super();
+  }
+
+  async findMany(
+    pagination: BatchHistoryPaginationInput,
+    options: BatchHistoryFindOptions,
+  ) {
+    const result = {
+      entities: [] as BatchHistoryEntity[],
+      pageInfo: {
+        totalPage: 0,
+      },
+    };
+
+    const rawsObject = await this.databaseService.get<
+      Record<string, BatchHistoryRaw>
+    >('');
+
+    if (rawsObject) {
+      const allEntities = Object.values(rawsObject).map(this.toEntity);
+      const appliedOptionEntities = this.applyFindOption(allEntities, options);
+      result.entities = this.applyPagination(appliedOptionEntities, pagination);
+
+      result.pageInfo.totalPage = Math.ceil(
+        appliedOptionEntities.length / pagination.size,
+      );
+    }
+    return result;
+  }
+
+  private applyFindOption(
+    raws: BatchHistoryEntity[],
+    options: BatchHistoryFindOptions,
+  ) {
+    return this.applyDateRange(raws, 'date', options.dateRange);
   }
 
   async save(

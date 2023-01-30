@@ -3,7 +3,7 @@ import { DateProps } from './common.type';
 import { DateRangeOption } from './common-repository.type';
 
 export class CommonRepository<T> {
-  applyDateRange<T extends Record<K, Date>, K extends DateProps<T>>(
+  protected applyDateRange<T extends Record<K, Date>, K extends DateProps<T>>(
     raws: T[],
     key: K,
     dateRange: DateRangeOption,
@@ -21,7 +21,7 @@ export class CommonRepository<T> {
     });
   }
 
-  applyPagination(raws: T[], pagination: MergeTxPaginationInput) {
+  protected applyPagination(raws: T[], pagination: MergeTxPaginationInput) {
     return raws.slice(
       (pagination.page - 1) * pagination.size,
       pagination.page * pagination.size,

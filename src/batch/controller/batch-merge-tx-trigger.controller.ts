@@ -1,12 +1,12 @@
 import { Controller, Inject, Post } from '@nestjs/common';
-import { BatchMergeTxService } from './service/batch-merge-tx.service';
+import { BatchMergeTxService } from '../service/batch-merge-tx.service';
 import {
   SAVE_BATCH_HISTORY_INBOUND_PORT,
   SaveBatchHistoryInboundPort,
-} from './inbound-port/save-batch-history.inbound-port';
+} from '../inbound-port/save-batch-history.inbound-port';
 
-@Controller()
-export class BatchController {
+@Controller('batch')
+export class BatchMergeTxTriggerController {
   constructor(
     private readonly mergeTxService: BatchMergeTxService,
 

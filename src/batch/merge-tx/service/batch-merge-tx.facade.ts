@@ -65,6 +65,7 @@ export class BatchMergeTxFacade {
     }
 
     const mergeTxs = await this.mergeChunk(txs);
+    console.log('merged size: ', mergeTxs.length);
     await this.saveMergeTxInboundPort.execute({
       mergeTxs,
     });

@@ -21,3 +21,15 @@ export type BatchHistoryRaw = {
   endedAt: Date;
   date: Date;
 };
+
+export type BatchHistoryPaginationInput = {
+  page: number;
+  size: number;
+};
+
+export type BatchHistoryFindOptions = {
+  dateRange: {
+    startDate?: Date;
+    endDate?: Date;
+  };
+};
