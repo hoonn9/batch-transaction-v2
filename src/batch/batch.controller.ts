@@ -1,30 +1,22 @@
 import { Controller, Inject, Post } from '@nestjs/common';
-import { BatchMergeTxFacade } from './merge-tx/service/batch-merge-tx.facade';
+import { BatchMergeTxService } from './service/batch-merge-tx.service';
 import {
-  API_COLLECT_BATCH_SERVICE,
-  CSV_COLLECT_BATCH_SERVICE,
-} from './merge-tx/service/batch-merge-tx.inject-token';
-import { BatchMergeTxCacheService } from './merge-tx/cache/batch-merge-tx-cache.service';
+  SAVE_BATCH_HISTORY_INBOUND_PORT,
+  SaveBatchHistoryInboundPort,
+} from './inbound-port/save-batch-history.inbound-port';
 
 @Controller()
 export class BatchController {
   constructor(
-    @Inject(API_COLLECT_BATCH_SERVICE)
-    private readonly apiBatchMergeTxFacade: BatchMergeTxFacade,
+    private readonly mergeTxService: BatchMergeTxService,
 
-    @Inject(CSV_COLLECT_BATCH_SERVICE)
-    private readonly csvBatchMergeTxFacade: BatchMergeTxFacade,
-
-    private readonly batchMergeTxCacheService: BatchMergeTxCacheService,
+    @Inject(SAVE_BATCH_HISTORY_INBOUND_PORT)
+    private readonly saveBatchHistoryInboundPort: SaveBatchHistoryInboundPort,
   ) {}
 
   @Post('trigger')
   async trigger() {
-    await Promise.all([
-      this.apiBatchMergeTxFacade.execute(),
-      this.csvBatchMergeTxFacade.execute(),
-    ]);
-
-    this.batchMergeTxCacheService.clear();
+    const batchHistory = await this.mergeTxService.execute(300, 1000);
+    await this.saveBatchHistoryInboundPort.execute([batchHistory]);
   }
 }

@@ -43,4 +43,8 @@ export class NodeJsonDbService<T> {
       await this.db.push(entities[key.toString()], entities);
     }
   }
+
+  async drop() {
+    await this.db.delete(this.path);
+  }
 }

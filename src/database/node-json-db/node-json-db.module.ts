@@ -1,25 +1,25 @@
-import { DynamicModule, Module, Provider, Type } from '@nestjs/common';
+import { DynamicModule, Module, Provider } from '@nestjs/common';
 import { Config, JsonDB } from 'node-json-db';
 import { NodeJsonDbService } from './node-json-db.service';
+import { MERGE_TRANSACTION_DATABASE_SERVICE } from '../../transaction/outbound-adapter/merge-tx.repository';
+import { BATCH_HISTORY_DATABASE_SERVICE } from '../../batch/outbound-adapter/batch-history.repository';
 
-export type NodeJsonDbEntity = {
-  path: string;
-  token: any;
-};
+const makeProviders = (db): Provider[] => [
+  {
+    provide: MERGE_TRANSACTION_DATABASE_SERVICE,
+    useValue: new NodeJsonDbService(db, '/mergeTxs'),
+  },
+  {
+    provide: BATCH_HISTORY_DATABASE_SERVICE,
+    useValue: new NodeJsonDbService(db, '/batchHistories'),
+  },
+];
 
 @Module({})
 export class NodeJsonDbModule {
-  static register(entities: NodeJsonDbEntity[]): DynamicModule {
-    const db = new JsonDB(new Config('my-db', false, false));
-
-    const providers = entities.map((entity): Provider => {
-      return {
-        provide: entity.token,
-        useFactory: () => {
-          return new NodeJsonDbService(db, entity.path);
-        },
-      };
-    });
+  static register(filename: string): DynamicModule {
+    const db = new JsonDB(new Config(filename, false, false));
+    const providers = makeProviders(db);
 
     return {
       module: NodeJsonDbModule,

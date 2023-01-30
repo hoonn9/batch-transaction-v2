@@ -6,17 +6,14 @@ import { MergeTxAdapter } from './outbound-adapter/merge-tx.adapter';
 import { SaveMergeTxService } from './service/save-merge-tx.service';
 import { SAVE_MERGE_TX_INBOUND_PORT } from './inbound-port/save-merge-tx.inbound-port';
 import { TransactionController } from './controller/transaction.controller';
-import { NodeJsonDbModule } from '../database/node-json-db/node-json-db.module';
-import {
-  MERGE_TRANSACTION_DATABASE_SERVICE,
-  MergeTxRepository,
-} from './outbound-adapter/merge-tx.repository';
+import { MergeTxRepository } from './outbound-adapter/merge-tx.repository';
 import { FIND_MERGE_TX_INBOUND_PORT } from './inbound-port/find-merge-tx.inbound-port';
 import { FindMergeTxService } from './service/find-merge-tx.service';
 import { PAGINATION_MERGE_TX_INBOUND_PORT } from './inbound-port/pagination-merge-tx.inbound-port';
 import { PaginationMergeTxService } from './service/pagination-merge-tx.service';
 import { PAGINATION_MERGE_TX_OUTBOUND_PORT } from './outbound-port/pagination-merge-tx.outbound-port';
 import { PaginationMergeTxAdapter } from './outbound-adapter/pagination-merge-tx.adapter';
+import { NodeJsonDbModule } from '../database/node-json-db/node-json-db.module';
 
 const mergeTxPorts: Provider[] = [
   {
@@ -56,14 +53,7 @@ const saveMergeTxPorts: Provider[] = [
 ];
 
 @Module({
-  imports: [
-    NodeJsonDbModule.register([
-      {
-        path: '/mergeTxs',
-        token: MERGE_TRANSACTION_DATABASE_SERVICE,
-      },
-    ]),
-  ],
+  imports: [NodeJsonDbModule.register('my-db')],
   controllers: [TransactionController],
   providers: [
     ...mergeTxPorts,

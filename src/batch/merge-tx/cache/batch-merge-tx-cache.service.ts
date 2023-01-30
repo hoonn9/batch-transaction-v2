@@ -6,10 +6,6 @@ import { TransactionEntity } from '../../../transaction/entity/transaction.entit
 export class BatchMergeTxCacheService {
   storeTxs: CollectStoreTxInboundPortOutputDto = {};
 
-  constructor() {
-    console.log('construct batch cache');
-  }
-
   saveStoreTxsCache(storeTxs: CollectStoreTxInboundPortOutputDto) {
     Object.entries(storeTxs).forEach(([storeId, txs]) => {
       this.storeTxs[storeId] ??= {};
@@ -18,8 +14,6 @@ export class BatchMergeTxCacheService {
         this.storeTxs[storeId][txId] = storeTx;
       });
     });
-
-    console.log('saveStoreTxsCache length', Object.keys(this.storeTxs).length);
   }
 
   findStoreTx(tx: TransactionEntity) {

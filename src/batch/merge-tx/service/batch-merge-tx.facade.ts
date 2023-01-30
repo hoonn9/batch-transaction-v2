@@ -26,6 +26,7 @@ import {
 import { BatchMergeTxCacheService } from '../cache/batch-merge-tx-cache.service';
 import { FindStoreTxByTx, MergeTransactionTarget } from './batch-merge-tx.type';
 import { delay } from '../../../lib/util';
+import { BatchMergeTxStatisticService } from '../statistic/batch-merge-tx-statistic.service';
 
 @Injectable()
 export class BatchMergeTxFacade {
@@ -46,14 +47,14 @@ export class BatchMergeTxFacade {
     private readonly collectStoreTxInboundPort: CollectStoreTxInboundPort,
 
     private readonly mergeTxBatchCacheService: BatchMergeTxCacheService,
+    private readonly batchMergeTxStatisticService: BatchMergeTxStatisticService,
   ) {}
 
-  async execute() {
-    const chunkSize = 100;
-    await this.loop(1, chunkSize);
+  async execute(chunkSize: number, delayMs: number) {
+    await this.loop(1, chunkSize, delayMs);
   }
 
-  private async loop(page: number, size: number) {
+  private async loop(page: number, size: number, delayMs: number) {
     const txs = await this.transactionCollectInboundPort.execute({
       page,
       size,
@@ -68,23 +69,35 @@ export class BatchMergeTxFacade {
       mergeTxs,
     });
 
-    await delay(1000);
-    await this.loop(page + 1, size);
+    await delay(delayMs);
+    await this.loop(page + 1, size, delayMs);
   }
 
   private async mergeChunk(
     txs: TransactionEntity[],
   ): Promise<MergeTransactionEntity[]> {
-    const cacheMergeResult = await this.mergeFromCache(txs);
+    const newTxs = await this.filterNewTxs(txs);
+
+    this.batchMergeTxStatisticService.checkCount.skipped +=
+      txs.length - newTxs.length;
+
+    const cacheMergeResult = await this.mergeFromCache(newTxs);
     const apiMergeResult = await this.mergeFromApi(cacheMergeResult.notMatched);
 
-    return [...cacheMergeResult.result, ...apiMergeResult];
+    const merged = [...cacheMergeResult.result, ...apiMergeResult];
+
+    this.batchMergeTxStatisticService.checkCount.succeeded += merged.length;
+    this.batchMergeTxStatisticService.checkCount.failed +=
+      newTxs.length - merged.length;
+
+    return merged;
   }
 
   private async mergeFromApi(txs: TransactionEntity[]) {
     const result: MergeTransactionEntity[] = [];
 
     const storeTxMap = await this.getStoreTxMapByTxs(txs);
+
     const matchResult = this.matchStoreTx(txs, (tx) =>
       this.findStoreTx(tx, storeTxMap),
     );
@@ -97,8 +110,7 @@ export class BatchMergeTxFacade {
   private async mergeFromCache(txs: TransactionEntity[]) {
     const result: MergeTransactionEntity[] = [];
 
-    const newTxs = await this.filterNewTxs(txs);
-    const cacheMatchResult = this.matchStoreTx(newTxs, (tx) =>
+    const cacheMatchResult = this.matchStoreTx(txs, (tx) =>
       this.mergeTxBatchCacheService.findStoreTx(tx),
     );
 

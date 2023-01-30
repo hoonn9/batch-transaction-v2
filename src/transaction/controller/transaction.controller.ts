@@ -33,13 +33,12 @@ export class TransactionController {
   @Get('/merge')
   @UsePipes(new ValidationPipe({ transform: true }))
   async getMergeTxs(@Query() query: GetMergeTxsQueryDto) {
-    console.log(query);
     return this.paginationMergeTxInboundPort.execute({
       size: query.size,
       page: query.page,
       dateRange: {
-        startDate: new Date(query.startDate),
-        endDate: new Date(query.endDate),
+        startDate: query.startDate ? new Date(query.startDate) : undefined,
+        endDate: query.endDate ? new Date(query.endDate) : undefined,
       },
     });
   }

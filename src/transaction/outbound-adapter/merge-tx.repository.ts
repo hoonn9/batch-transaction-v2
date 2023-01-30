@@ -6,16 +6,19 @@ import {
   MergeTxFindOptions,
   MergeTxPaginationInput,
 } from './type/merge-tx-repository.type';
+import { CommonRepository } from '../../common/common-repository';
 
 export const MERGE_TRANSACTION_DATABASE_SERVICE =
   'MERGE_TRANSACTION_DATABASE_SERVICE' as const;
 
 @Injectable()
-export class MergeTxRepository {
+export class MergeTxRepository extends CommonRepository<MergeTransactionEntity> {
   constructor(
     @Inject(MERGE_TRANSACTION_DATABASE_SERVICE)
     private readonly databaseService: NodeJsonDbService<MergeTransactionRaw>,
-  ) {}
+  ) {
+    super();
+  }
 
   async save(
     entities: MergeTransactionEntity | MergeTransactionEntity[],
@@ -59,50 +62,22 @@ export class MergeTxRepository {
     >('');
 
     if (rawsObject) {
-      const allRaws = Object.values(rawsObject);
-      const appliedOptionRaws = this.applyFindOption(allRaws, options);
-      result.entities = this.applyPagination(appliedOptionRaws, pagination).map(
-        this.toEntity,
-      );
+      const allEntities = Object.values(rawsObject).map(this.toEntity);
+      const appliedOptionEntities = this.applyFindOption(allEntities, options);
+      result.entities = this.applyPagination(appliedOptionEntities, pagination);
 
       result.pageInfo.totalPage = Math.ceil(
-        appliedOptionRaws.length / pagination.size,
+        appliedOptionEntities.length / pagination.size,
       );
     }
     return result;
   }
 
   private applyFindOption(
-    raws: MergeTransactionRaw[],
+    raws: MergeTransactionEntity[],
     options: MergeTxFindOptions,
   ) {
-    return raws.filter((raw) => {
-      if (
-        options.dateRange.startDate &&
-        new Date(options.dateRange.startDate) > new Date(raw.date)
-      ) {
-        return false;
-      }
-
-      if (
-        options.dateRange.endDate &&
-        new Date(options.dateRange.endDate) < new Date(raw.date)
-      ) {
-        return false;
-      }
-
-      return true;
-    });
-  }
-
-  private applyPagination(
-    raws: MergeTransactionRaw[],
-    pagination: MergeTxPaginationInput,
-  ) {
-    return raws.slice(
-      (pagination.page - 1) * pagination.size,
-      pagination.page * pagination.size,
-    );
+    return this.applyDateRange(raws, 'date', options.dateRange);
   }
 
   private toRaw(entity: MergeTransactionEntity): MergeTransactionRaw {
@@ -127,5 +102,9 @@ export class MergeTxRepository {
     entity.balance = raw.balance;
     entity.cancelYn = raw.cancelYn;
     return entity;
+  }
+
+  clear() {
+    return this.databaseService.drop();
   }
 }

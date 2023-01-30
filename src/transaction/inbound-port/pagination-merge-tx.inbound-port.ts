@@ -4,8 +4,8 @@ export type PaginationMergeTxInboundPortInputDto = {
   size: number;
   page: number;
   dateRange: {
-    startDate: Date;
-    endDate: Date;
+    startDate?: Date;
+    endDate?: Date;
   };
 };
 export type PaginationMergeTxInboundPortOutputDto = {

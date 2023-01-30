@@ -19,11 +19,11 @@ export class DateRangeInputDto {
   @Validate(YYYYmmDD, {
     message: 'date 값은 yyyy-mm-dd 형식이 되어야합니다.',
   })
-  startDate: string;
+  startDate?: string;
 
   @IsOptional()
   @Validate(YYYYmmDD, {
     message: 'date 값은 yyyy-mm-dd 형식이 되어야합니다.',
   })
-  endDate: string;
+  endDate?: string;
 }

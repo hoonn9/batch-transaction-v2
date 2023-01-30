@@ -2,32 +2,40 @@ import { HttpService } from '@nestjs/axios';
 import { AxiosRequestConfig, isAxiosError, AxiosResponse } from 'axios';
 import { Injectable } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
+import { FetchStatisticService } from './fetch-statistic.service';
 
 @Injectable()
 export class FetchService {
   public requestFailed: AxiosRequestConfig[] = [];
   public responseFailed: AxiosRequestConfig[] = [];
 
-  constructor(private readonly httpService: HttpService) {
-    // httpService.axiosRef.interceptors.request.use(
-    //   (req) => {
-    //     return req;
-    //   },
-    //   (req) => {
-    //     this.requestFailed.push(req);
-    //     return Promise.reject(req);
-    //   },
-    // );
-    //
-    // httpService.axiosRef.interceptors.response.use(
-    //   (res) => {
-    //     return res;
-    //   },
-    //   (res) => {
-    //     this.responseFailed.push(res);
-    //     return Promise.reject(res);
-    //   },
-    // );
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly fetchStatisticService: FetchStatisticService,
+  ) {
+    httpService.axiosRef.interceptors.request.use(
+      (req) => {
+        this.fetchStatisticService.apiRequestCount.total++;
+        return req;
+      },
+      (req) => {
+        this.requestFailed.push(req);
+        this.fetchStatisticService.apiRequestCount.failed++;
+        return Promise.reject(req);
+      },
+    );
+
+    httpService.axiosRef.interceptors.response.use(
+      (res) => {
+        this.fetchStatisticService.apiRequestCount.succeeded++;
+        return res;
+      },
+      (res) => {
+        this.responseFailed.push(res);
+        this.fetchStatisticService.apiRequestCount.failed++;
+        return Promise.reject(res);
+      },
+    );
   }
 
   get<T>(url: string, config?: AxiosRequestConfig<T>, retry = 0) {

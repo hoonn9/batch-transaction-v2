@@ -9,6 +9,7 @@ import { API_COLLECT_OUTBOUND_PORT } from '../../../transaction-collect/outbound
 import { ApiCollectAdapter } from '../../../transaction-collect/outbound-adapter/api-collect.adapter';
 import { FetchModule } from '../../../fetch/fetch.module';
 import { BatchMergeTxCacheModule } from '../cache/batch-merge-tx-cache.module';
+import { BatchMergeTxStatisticModule } from '../statistic/batch-merge-tx-statistic.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { BatchMergeTxCacheModule } from '../cache/batch-merge-tx-cache.module';
     TransactionModule,
     TransactionCollectModule,
     BatchMergeTxCacheModule,
+    BatchMergeTxStatisticModule,
   ],
   providers: [
     {
