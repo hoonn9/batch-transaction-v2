@@ -1,20 +1,17 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { TransactionEntity } from '../../../transaction/entity/transaction.entity';
+import { MergeTransactionEntity } from '../../../transaction/entity/merge-transaction.entity';
+import { FindStoreTxByTx, MergeTransactionTarget } from './chunk-merge-tx.type';
 import {
   COLLECT_STORE_TX_INBOUND_PORT,
   CollectStoreTxInboundPort,
   CollectStoreTxInboundPortOutputDto,
 } from '../../../transaction-collect/inbound-port/collect-store-tx.inbound-port';
+import { StoreTransactionEntity } from '../../../transaction/entity/store-transaction.entity';
 import {
   MERGE_TX_INBOUND_PORT,
   MergeTxInboundPort,
 } from '../../../transaction/inbound-port/merge-tx.inbound-port';
-import {
-  TRANSACTION_COLLECT_INBOUND_PORT,
-  TransactionCollectInboundPort,
-} from '../../../transaction-collect/inbound-port/transaction-collect.inbound-port';
-import { StoreTransactionEntity } from '../../../transaction/entity/store-transaction.entity';
-import { MergeTransactionEntity } from '../../../transaction/entity/merge-transaction.entity';
 import {
   SAVE_MERGE_TX_INBOUND_PORT,
   SaveMergeTxInboundPort,
@@ -24,16 +21,11 @@ import {
   FindMergeTxInboundPort,
 } from '../../../transaction/inbound-port/find-merge-tx.inbound-port';
 import { BatchMergeTxCacheService } from '../cache/batch-merge-tx-cache.service';
-import { FindStoreTxByTx, MergeTransactionTarget } from './batch-merge-tx.type';
-import { delay } from '../../../lib/util';
-import { BatchMergeTxStatisticService } from '../statistic/batch-merge-tx-statistic.service';
+import { BatchStatisticService } from '../../statistic/batch-statistic.service';
 
 @Injectable()
-export class BatchMergeTxFacade {
+export class SaveAndMergeTxService {
   constructor(
-    @Inject(TRANSACTION_COLLECT_INBOUND_PORT)
-    private readonly transactionCollectInboundPort: TransactionCollectInboundPort,
-
     @Inject(MERGE_TX_INBOUND_PORT)
     private readonly mergeTxInboundPort: MergeTxInboundPort,
 
@@ -47,36 +39,10 @@ export class BatchMergeTxFacade {
     private readonly collectStoreTxInboundPort: CollectStoreTxInboundPort,
 
     private readonly mergeTxBatchCacheService: BatchMergeTxCacheService,
-    private readonly batchMergeTxStatisticService: BatchMergeTxStatisticService,
+    private readonly batchMergeTxStatisticService: BatchStatisticService,
   ) {}
 
-  async execute(chunkSize: number, delayMs: number) {
-    await this.loop(1, chunkSize, delayMs);
-  }
-
-  private async loop(page: number, size: number, delayMs: number) {
-    const txs = await this.transactionCollectInboundPort.execute({
-      page,
-      size,
-    });
-
-    if (txs === null) {
-      return;
-    }
-
-    const mergeTxs = await this.mergeChunk(txs);
-    console.log('merged size: ', mergeTxs.length);
-    await this.saveMergeTxInboundPort.execute({
-      mergeTxs,
-    });
-
-    await delay(delayMs);
-    await this.loop(page + 1, size, delayMs);
-  }
-
-  private async mergeChunk(
-    txs: TransactionEntity[],
-  ): Promise<MergeTransactionEntity[]> {
+  async execute(txs: TransactionEntity[]): Promise<MergeTransactionEntity[]> {
     const newTxs = await this.filterNewTxs(txs);
 
     this.batchMergeTxStatisticService.checkCount.skipped +=
@@ -85,11 +51,18 @@ export class BatchMergeTxFacade {
     const cacheMergeResult = await this.mergeFromCache(newTxs);
     const apiMergeResult = await this.mergeFromApi(cacheMergeResult.notMatched);
 
-    const merged = [...cacheMergeResult.result, ...apiMergeResult];
+    const merged = [...cacheMergeResult.result, ...apiMergeResult.result];
+
+    this.mergeTxBatchCacheService.registryFailTxs(apiMergeResult.notMatched);
 
     this.batchMergeTxStatisticService.checkCount.succeeded += merged.length;
     this.batchMergeTxStatisticService.checkCount.failed +=
       newTxs.length - merged.length;
+
+    console.log('merged size: ', merged.length);
+    await this.saveMergeTxInboundPort.execute({
+      mergeTxs: merged,
+    });
 
     return merged;
   }
@@ -105,7 +78,7 @@ export class BatchMergeTxFacade {
 
     result.push(...this.merge(matchResult.target));
 
-    return result;
+    return { result, notMatched: matchResult.notMatched };
   }
 
   private async mergeFromCache(txs: TransactionEntity[]) {
@@ -163,7 +136,7 @@ export class BatchMergeTxFacade {
     );
   }
 
-  async filterNewTxs(txs: TransactionEntity[]) {
+  private async filterNewTxs(txs: TransactionEntity[]) {
     const result: TransactionEntity[] = [];
 
     await Promise.all(

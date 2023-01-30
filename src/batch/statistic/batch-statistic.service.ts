@@ -1,13 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import {
-  BatchHistoryEntity,
-  CheckCount,
-} from '../../entity/batch-history.entity';
-import { FetchStatisticService } from '../../../fetch/fetch-statistic.service';
+import { BatchHistoryEntity, CheckCount } from '../entity/batch-history.entity';
+import { FetchStatisticService } from '../../fetch/fetch-statistic.service';
 import { performance } from 'perf_hooks';
+import { v4 } from 'uuid';
 
 @Injectable()
-export class BatchMergeTxStatisticService {
+export class BatchStatisticService {
   chunkSize: number;
   startMs: number;
   startedAt: Date;
@@ -34,10 +32,11 @@ export class BatchMergeTxStatisticService {
     this.endedAt = new Date();
   }
 
-  saveHistory() {
+  createHistory() {
     const activeMs = this.endMs - this.startMs;
 
     const entity = new BatchHistoryEntity();
+    entity.id = v4();
     entity.chunkSize = this.chunkSize;
     entity.endedAt = this.endedAt;
     entity.startedAt = this.startedAt;

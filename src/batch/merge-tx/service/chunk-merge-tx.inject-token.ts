@@ -1,0 +1,2 @@
+export const API_CHUNK_MERGE_SERVICE = 'API_CHUNK_MERGE_SERVICE' as const;
+export const CSV_CHUNK_MERGE_SERVICE = 'CSV_CHUNK_MERGE_SERVICE' as const;

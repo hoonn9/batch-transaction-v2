@@ -1,40 +1,54 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
-  API_COLLECT_BATCH_SERVICE,
-  CSV_COLLECT_BATCH_SERVICE,
-} from '../merge-tx/service/batch-merge-tx.inject-token';
-import { BatchMergeTxFacade } from '../merge-tx/service/batch-merge-tx.facade';
+  API_CHUNK_MERGE_SERVICE,
+  CSV_CHUNK_MERGE_SERVICE,
+} from '../merge-tx/service/chunk-merge-tx.inject-token';
+import { ChunkMergeTxService } from '../merge-tx/service/chunk-merge-tx.service';
 import { BatchMergeTxCacheService } from '../merge-tx/cache/batch-merge-tx-cache.service';
-import { BatchMergeTxStatisticService } from '../merge-tx/statistic/batch-merge-tx-statistic.service';
+import { BatchStatisticService } from '../statistic/batch-statistic.service';
+import {
+  SAVE_MERGE_TX_BATCH_HISTORY_INBOUND_PORT,
+  SaveMergeTxBatchHistoryInboundPort,
+} from '../merge-tx/merge-tx-batch-history/inbound-port/save-merge-tx-batch-history.inbound-port';
 
 @Injectable()
 export class BatchMergeTxService {
   constructor(
-    @Inject(API_COLLECT_BATCH_SERVICE)
-    private readonly apiBatchMergeTxFacade: BatchMergeTxFacade,
+    @Inject(API_CHUNK_MERGE_SERVICE)
+    private readonly apiChunkMergeTxService: ChunkMergeTxService,
 
-    @Inject(CSV_COLLECT_BATCH_SERVICE)
-    private readonly csvBatchMergeTxFacade: BatchMergeTxFacade,
+    @Inject(CSV_CHUNK_MERGE_SERVICE)
+    private readonly csvChunkMergeTxService: ChunkMergeTxService,
+
+    @Inject(SAVE_MERGE_TX_BATCH_HISTORY_INBOUND_PORT)
+    private readonly saveMergeTxBatchHistoryInboundPort: SaveMergeTxBatchHistoryInboundPort,
 
     private readonly batchMergeTxCacheService: BatchMergeTxCacheService,
-    private readonly batchMergeTxStatisticService: BatchMergeTxStatisticService,
+    private readonly batchStatisticService: BatchStatisticService,
   ) {}
 
   async execute(chunkSize: number, delayMs: number) {
-    this.batchMergeTxStatisticService.start(chunkSize);
+    this.batchStatisticService.start(chunkSize);
 
     await Promise.all([
-      this.apiBatchMergeTxFacade.execute(chunkSize, delayMs),
-      this.csvBatchMergeTxFacade.execute(chunkSize, delayMs),
+      this.apiChunkMergeTxService.execute(chunkSize, delayMs),
+      this.csvChunkMergeTxService.execute(chunkSize, delayMs),
     ]);
 
+    this.batchStatisticService.end();
+
+    const batchHistoryEntity = this.batchStatisticService.createHistory();
+
+    await this.saveMergeTxBatchHistoryInboundPort.execute([
+      this.batchMergeTxCacheService.createHistory(batchHistoryEntity.id),
+    ]);
+
+    this.clear();
+    return batchHistoryEntity;
+  }
+
+  private clear() {
     this.batchMergeTxCacheService.clear();
-
-    this.batchMergeTxStatisticService.end();
-    const entity = this.batchMergeTxStatisticService.saveHistory();
-    console.log(entity);
-    this.batchMergeTxStatisticService.clear();
-
-    return entity;
+    this.batchStatisticService.clear();
   }
 }
